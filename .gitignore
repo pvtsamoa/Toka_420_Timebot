@@ -1,0 +1,22 @@
+﻿class ChatState:
+    tokens = {}
+    @classmethod
+    def get_query(cls, chat_id: int) -> str: return cls.tokens.get(chat_id, "Weedcoin")
+    @classmethod
+    def set_query(cls, chat_id: int, q: str): cls.tokens[chat_id] = q
+GetQuery = ChatState.get_que_
+Remove-Item -Recurse -Force C:\Users\mache\Projects\Toka_420_Timebot
+
+# Create project root
+C:\Users\mache\Projects\Toka_420_Timebot = "C:\Users\mache\Projects\Toka_420_Timebot"
+New-Item -ItemType Directory -Force -Path C:\Users\mache\Projects\Toka_420_Timebot | Out-Null
+Set-Location C:\Users\mache\Projects\Toka_420_Timebot
+New-Item -ItemType Directory -Force -Path core,adapters,services,scheduler,commands,media,data,scripts | Out-Null
+
+# .gitignore
+@"
+.env
+__pycache__/
+*.pyc
+data/
+logs/
