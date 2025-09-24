@@ -26,12 +26,12 @@ fi
 [ -f "$ROOT/.venv/bin/activate" ] && . "$ROOT/.venv/bin/activate"
 
 # log a quick header (mask most of the token)
-MASKED_TOKEN="${TELEGRAM_TOKEN:-missing}"
+MASKED_TOKEN="${TELEGRAM_BOT_TOKEN:-missing}"
 [ "${#MASKED_TOKEN}" -gt 12 ] && MASKED_TOKEN="${MASKED_TOKEN:0:9}********"
 
 {
   echo "--- $(date) starting Toka ---"
-  echo "TELEGRAM_TOKEN: $MASKED_TOKEN"
+  echo "TELEGRAM_BOT_TOKEN: $MASKED_TOKEN"
   echo "CHAT_IDS: ${CHAT_IDS:-<none>}"
 } >> "$LOG"
 

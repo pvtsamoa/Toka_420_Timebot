@@ -20,7 +20,7 @@ This bot posts ritual 4:20 messages across global market hubs, pulling live pric
 ## Setup
 1. Clone this repo  
 2. Install dependencies  
-3. Copy `.env.example` to `.env` and add your TELEGRAM_TOKEN  
+3. Copy `.env.example` to `.env` and add your TELEGRAM_BOT_TOKEN  
 4. Run: `python app.py`
 
 ---
