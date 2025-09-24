@@ -1,18 +1,44 @@
-﻿import logging
+import logging, time
 from typing import Callable
-from services.price import get_anchor, default_query
-from services.persona import toka_anchor_line
+from config import SETTINGS
+from services.ritual import compose_preroll, compose_ritual
+
 log = logging.getLogger("jobs")
-def make_preroll_job(send_fn: Callable[[int,str], None], get_query: Callable[[int], str] = default_query):
+
+def make_preroll_job(send_fn: Callable[[int,str], None]):
     async def job(ctx):
-        chat_id = ctx.job.chat_id; q = get_query(chat_id)
-        await send_fn(chat_id, f"⛵️ Pre-roll @ 4:00 — setting sail for 4:20 | token: {q}")
+        chat_id = ctx.job.chat_id
+        hub = {"name": ctx.job.name.split("-")[1] if ctx.job and ctx.job.name else "Hub", "tz": ""}  # best effort
+        text = compose_preroll(hub, SETTINGS.WEEDCOIN_TOKEN)
+        await send_fn(chat_id, text)
+        st = _get_state()
+        st["last_preroll"] = time.time()
+        _set_state(st)
     return job
-def make_ritual_job(send_fn: Callable[[int,str], None], get_query: Callable[[int], str] = default_query):
+
+def make_ritual_job(send_fn: Callable[[int,str], None]):
     async def job(ctx):
-        chat_id = ctx.job.chat_id; q = get_query(chat_id)
-        anchor = get_anchor(q)
-        if not anchor:
-            await send_fn(chat_id, f"⚠️ Anchor unavailable for {q}. Keep calm, paddle on."); return
-        await send_fn(chat_id, toka_anchor_line(q, anchor))
+        chat_id = ctx.job.chat_id
+        # try to infer hub name from job name; if not present, fallback
+        hub_name = "Hub"
+        if ctx.job and ctx.job.name and "-" in ctx.job.name:
+            try:
+                hub_name = ctx.job.name.split("-")[1]
+            except Exception:
+                pass
+        hub = {"name": hub_name, "tz": ""}  # tz used only for pretty time inside compose
+        text = compose_ritual(hub, SETTINGS.WEEDCOIN_TOKEN)
+        await send_fn(chat_id, text)
+        st = _get_state()
+        st["last_ritual"] = time.time()
+        _set_state(st)
     return job
+
+# simple local state access using existing KV
+from services.storage import KV
+def _get_state(): 
+    try: return KV.get()
+    except Exception: return {}
+def _set_state(s):
+    try: KV.set(s)
+    except Exception: pass

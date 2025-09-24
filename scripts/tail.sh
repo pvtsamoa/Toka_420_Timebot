@@ -1,4 +1,8 @@
-﻿#!/usr/bin/env bash
+#!/data/data/com.termux/files/usr/bin/bash
 set -euo pipefail
-[ -f ./data/bot.log ] || type NUL > ./data/bot.log
-tail -f ./data/bot.log
+cd "$(dirname "$0")/.."
+
+LOGFILE="logs/bot.log"
+[ -f "$LOGFILE" ] || touch "$LOGFILE"
+echo "Tailing $LOGFILE (Ctrl+C to exit)"
+tail -f "$LOGFILE"
