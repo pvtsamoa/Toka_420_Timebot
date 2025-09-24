@@ -1,48 +1,16 @@
-# app.py
+import os
 from dotenv import load_dotenv
-
-from config import SETTINGS
-from core.logging import setup_logging
-from adapters.telegram_bot import TelegramAdapter
-
-# commands
-from commands.status import status_cmd
-from commands.id import id_cmd
-from commands.token import token_cmd
-from commands.news import news_cmd
-
-# scheduler
-from scheduler.setup import register_jobs
-
-
-def main() -> None:
-    """Boot the bot, attach handlers, and start polling (blocking)."""
+from telegram.ext import Application, CommandHandler
+from scheduler import schedule_hubs
+from services.ritual_time import ritual_call
+from commands.status import status
+from commands.token import token
+def build_app():
     load_dotenv()
-    log = setup_logging()
-
-    tg = TelegramAdapter()
-
-    # If TELEGRAM_TOKEN is missing, adapter exposes app=None
-    if not getattr(tg, "app", None):
-        log.warning("Add TELEGRAM_TOKEN to .env then run again.")
-        print("Toka 420 TimeBot v4: Telegram disabled (no token).")
-        return
-
-    # Handlers
-    tg.add_handler("status", status_cmd)
-    tg.add_handler("id", id_cmd)
-    tg.add_handler("token", token_cmd)
-    tg.add_handler("news", news_cmd)
-
-    # Scheduler (pre-roll & ritual across configured chats)
-    try:
-        register_jobs(tg.app)
-    except Exception as exc:
-        log.exception("Scheduler failed to initialize: %s", exc)
-
-    print("Toka 420 TimeBot v4 — running")
-    tg.run_polling()  # blocks; manages its own event loop (PTB v20+)
-
-
+    app = Application.builder().token(os.getenv("TELEGRAM_BOT_TOKEN")).build()
+    app.add_handler(CommandHandler("status", status))
+    app.add_handler(CommandHandler("token", token))
+    schedule_hubs(app.job_queue, ritual_call)
+    return app
 if __name__ == "__main__":
-    main()
+    build_app().run_polling(drop_pending_updates=True)

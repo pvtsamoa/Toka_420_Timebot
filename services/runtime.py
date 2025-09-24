@@ -1,34 +1,19 @@
-import os, json, random, time
-from typing import List, Tuple
-from services.storage import KV
-from config import SETTINGS
-
-PACK_ORDER = ["proverbs", "jokes", "safety", "market"]
-
-def _load_bank(name: str) -> List[str]:
-    path = os.path.join(SETTINGS.MEDIA_DIR, f"{name}.json")
-    if not os.path.exists(path):
-        return []
-    try:
-        with open(path, "r") as f:
-            data = json.load(f)
-            return [str(x).strip() for x in data if str(x).strip()]
-    except Exception:
-        return []
-
-def rotate_blessing() -> Tuple[str, str]:
-    """Rotate through pack types; pick a random line within the chosen pack."""
-    state = KV.get()
-    idx = int(state.get("blunt_idx", 0))
-    pack = PACK_ORDER[idx % len(PACK_ORDER)]
-    items = _load_bank(pack)
-    text = random.choice(items) if items else f"(missing {pack}.json)"
-    state["blunt_idx"] = idx + 1
-    KV.set(state)
-    return pack, text
-
-def packs_health() -> Tuple[bool, bool]:
-    """Return (education_ok, safety_ok) based on media packs being present."""
-    edu_ok = bool(_load_bank("proverbs") or _load_bank("market"))
-    safety_ok = bool(_load_bank("safety"))
-    return edu_ok, safety_ok
+import os, re
+from tweepy import OAuth1UserHandler, API
+TAG_HANDLE = "@weedcoinog"
+TAG_RE = re.compile(r"(?i)@weedcoinog\b")
+def _x_client():
+    auth = OAuth1UserHandler(
+        os.getenv("X_API_KEY"), os.getenv("X_API_SECRET"),
+        os.getenv("X_ACCESS_TOKEN"), os.getenv("X_ACCESS_SECRET"),
+    ); return API(auth)
+def enforce_tag(text: str) -> str:
+    if not text: return TAG_HANDLE
+    return text if TAG_RE.search(text) else f"{text.rstrip()} {TAG_HANDLE}"
+def post_to_x(text: str, media_paths=None):
+    api = _x_client(); final = enforce_tag(text)
+    if media_paths:
+        ids = [api.media_upload(filename=p).media_id_string for p in media_paths]
+        api.update_status(status=final, media_ids=ids)
+    else:
+        api.update_status(status=final)
