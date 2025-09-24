@@ -1,0 +1,17 @@
+# Telegram bot framework
+python-telegram-bot==20.3
+
+# Twitter/X API client
+tweepy==4.14.0
+
+# HTTP requests
+requests==2.31.0
+
+# Load secrets from .env
+python-dotenv==1.0.0
+
+# Timezone utilities
+pytz==2023.3
+
+# RSS news parsing
+feedparser==6.0.10
