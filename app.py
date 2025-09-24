@@ -1,3 +1,4 @@
+from services.error_handler import on_error
 import os
 from dotenv import load_dotenv
 from telegram.ext import Application, CommandHandler
@@ -8,6 +9,7 @@ from commands.token import token
 def build_app():
     load_dotenv(override=True)
     app = Application.builder().token(os.getenv("TELEGRAM_BOT_TOKEN")).build()
+    application.add_error_handler(on_error)
     app.add_handler(CommandHandler("status", status))
     app.add_handler(CommandHandler("token", token))
     schedule_hubs(app.job_queue, ritual_call)
