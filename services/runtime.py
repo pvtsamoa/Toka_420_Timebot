@@ -1,19 +1,39 @@
-import os, re
-from tweepy import OAuth1UserHandler, API
+import os, re, logging
+try:
+    import tweepy
+except Exception:
+    tweepy = None
+
 TAG_HANDLE = "@weedcoinog"
-TAG_RE = re.compile(r"(?i)@weedcoinog\b")
-def _x_client():
-    auth = OAuth1UserHandler(
-        os.getenv("X_API_KEY"), os.getenv("X_API_SECRET"),
-        os.getenv("X_ACCESS_TOKEN"), os.getenv("X_ACCESS_SECRET"),
-    ); return API(auth)
-def enforce_tag(text: str) -> str:
-    if not text: return TAG_HANDLE
-    return text if TAG_RE.search(text) else f"{text.rstrip()} {TAG_HANDLE}"
-def post_to_x(text: str, media_paths=None):
-    api = _x_client(); final = enforce_tag(text)
-    if media_paths:
-        ids = [api.media_upload(filename=p).media_id_string for p in media_paths]
-        api.update_status(status=final, media_ids=ids)
-    else:
-        api.update_status(status=final)
+TAG_RE     = re.compile(r"(?i)@weedcoinog\b")
+HASH_RE    = re.compile(r"(?i)#weedcoin\b")
+TICK_RE    = re.compile(r"(?i)\$weedcoin\b")
+
+def enforce_tags(s: str) -> str:
+    extras = []
+    if not TAG_RE.search(s):  extras.append(TAG_HANDLE)
+    if not HASH_RE.search(s): extras.append("#Weedcoin")
+    if not TICK_RE.search(s): extras.append("$weedcoin")
+    return (s + " " + " ".join(extras)).strip()
+
+def build_x_text(hub_name: str, token: str) -> str:
+    # Keep message short; token is currently fixed to $weedcoin in branding
+    return f"{hub_name} 4:20 • $weedcoin"
+
+def post_to_x(text: str):
+    text = enforce_tags(text)
+    if tweepy is None:
+        logging.warning("[X relay] Tweepy not installed; skipping")
+        return
+    k = os.getenv("X_API_KEY"); s = os.getenv("X_API_SECRET")
+    at = os.getenv("X_ACCESS_TOKEN"); as_ = os.getenv("X_ACCESS_SECRET")
+    if not all([k, s, at, as_]):
+        logging.warning("[X relay] Missing API creds; skipping")
+        return
+    try:
+        auth = tweepy.OAuth1UserHandler(k, s, at, as_)
+        api = tweepy.API(auth)
+        api.update_status(status=text)
+        logging.info("[X] posted: %s", text)
+    except Exception as e:
+        logging.warning("[X relay error] %s", e)
