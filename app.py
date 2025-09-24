@@ -5,6 +5,7 @@ from telegram.ext import Application, CommandHandler
 from scheduler import schedule_hubs
 from services.ritual_time import ritual_call
 from commands.status import status
+from commands.preroll import preroll
 from commands.token import token
 def build_app():
     load_dotenv(override=True)
@@ -12,6 +13,7 @@ def build_app():
     application.add_error_handler(on_error)
     app.add_handler(CommandHandler("status", status))
     app.add_handler(CommandHandler("token", token))
+    app.add_handler(CommandHandler("preroll", preroll))
     schedule_hubs(app.job_queue, ritual_call)
     return app
 if __name__ == "__main__":
