@@ -6,7 +6,7 @@ from services.ritual_time import ritual_call
 from commands.status import status
 from commands.token import token
 def build_app():
-    load_dotenv()
+    load_dotenv(override=True)
     app = Application.builder().token(os.getenv("TELEGRAM_BOT_TOKEN")).build()
     app.add_handler(CommandHandler("status", status))
     app.add_handler(CommandHandler("token", token))
