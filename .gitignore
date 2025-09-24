@@ -22,3 +22,7 @@ data/
 logs/
 .venv/
 .env*
+
+# archives & logs
+*.tgz
+logs/*.log
