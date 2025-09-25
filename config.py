@@ -9,9 +9,9 @@ class Settings:
     FF_X_RELAY: bool = os.getenv("FF_X_RELAY", "0") == "1"
     FF_PRE_ROLL: bool = os.getenv("FF_PRE_ROLL", "1") == "1"
 
-    # Split CHAT_IDS by comma → list of strings
-    CHAT_IDS: list[str] = field(
-        default_factory=lambda: os.getenv("CHAT_IDS", "").split(",") if os.getenv("CHAT_IDS") else []
+    # Split TELEGRAM_GLOBAL_CHAT_ID by comma → list of strings
+    TELEGRAM_GLOBAL_CHAT_ID: list[str] = field(
+        default_factory=lambda: os.getenv("TELEGRAM_GLOBAL_CHAT_ID", "").split(",") if os.getenv("TELEGRAM_GLOBAL_CHAT_ID") else []
     )
 
     WEEDCOIN_TOKEN: str = os.getenv("WEEDCOIN_TOKEN", "Weedcoin")

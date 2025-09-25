@@ -1,0 +1,60 @@
+from __future__ import annotations
+import re
+from typing import List, Tuple
+import feedparser
+
+# Default sources (you can override via NEWS_SOURCES in .env)
+DEFAULT_SOURCES = [
+    # Crypto
+    "https://www.coindesk.com/arc/outboundfeeds/rss/?outputType=xml",
+    "https://cointelegraph.com/rss",
+    "https://decrypt.co/feed",
+    # Cannabis (biz/policy/market)
+    "https://www.marijuanamoment.net/feed/",
+    "https://mjbizdaily.com/feed/",
+]
+
+_CRYPTO   = {"crypto","cryptocurrency","bitcoin","ethereum","btc","eth","web3","defi","token","blockchain"}
+_CANNABIS = {"cannabis","marijuana","weed","hemp","thc","cbd","dispensary"}
+
+def _normalize_sources(sources_env: str|None) -> List[str]:
+    if not sources_env:
+        return DEFAULT_SOURCES
+    parts = [p.strip() for p in sources_env.split(",")]
+    return [p for p in parts if p]
+
+def _clean(t: str) -> str:
+    return re.sub(r"\s+", " ", (t or "")).strip()
+
+def fetch_headlines(sources_env: str|None, max_items: int = 6) -> List[Tuple[str,str,str]]:
+    """Return a list of (title, url, source_name) filtered to crypto/cannabis keywords."""
+    sources = _normalize_sources(sources_env)
+    seen = set()
+    items: List[Tuple[str,str,str]] = []
+    for url in sources:
+        try:
+            feed = feedparser.parse(url)
+            src_name = _clean(feed.feed.get("title","") or url)
+            for e in feed.entries[:12]:
+                title = _clean(e.get("title",""))
+                link  = e.get("link","")
+                if not title or not link:
+                    continue
+                key = (title, link)
+                if key in seen:
+                    continue
+                seen.add(key)
+
+                blob = f"{title} {e.get('summary','')}".lower()
+                is_crypto = any(k in blob for k in _CRYPTO)
+                is_canna  = any(k in blob for k in _CANNABIS)
+                if not (is_crypto or is_canna):
+                    continue
+
+                items.append((title, link, src_name))
+                if len(items) >= max_items:
+                    return items
+        except Exception:
+            # skip broken feeds
+            continue
+    return items

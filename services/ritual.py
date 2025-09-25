@@ -26,4 +26,16 @@ def build_ritual_text(hub_name: str, token_id: str = None):
     shield = _pick(MEDIA.get("safety", []), "DYOR • Stay balanced • Obey local laws")
     lines = [f"🌊 Toka 4:20 — {hub_name}", f"📈 {anchor}", f"🛡 {shield}"]
     if proverb: lines.append(f"🌺 {proverb}")
-    return "\n".join(lines)
+    return _append_tip_line("\n".join(lines))
+
+
+import os
+from services.pools import pick_combo
+def _append_tip_line(text: str) -> str:
+    if os.getenv("INCLUDE_EDU_SAFETY", "1") not in ("1","true","True","YES","yes"):
+        return text
+    edu, saf = pick_combo()
+    tip = edu or saf
+    if tip:
+        return text + f"\n\n📘 Tip: {tip}"
+    return text
