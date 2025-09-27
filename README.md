@@ -1,28 +1,20 @@
-# Toka 420 TimeBot — v4 Modular Scaffold
+# Toka 420 TimeBot
 
-🌿⛵ **Weedcoin ritual bot** built as a personal learning project.  
-This bot posts ritual 4:20 messages across global market hubs, pulling live price anchors from Dexscreener and weaving them into cultural rhythm.
+## Overview  
+Toka 420 TimeBot is a modular Telegram + X relay bot.  
+It announces **cryptocurrency market hub prerolls (4:00)** in Telegram and **Holy Minute posts (4:20)** in both Telegram and X.  
+The bot is stateless, lean, and timezone-aware — focused on crypto markets and cannabis culture timing.
 
----
+## Features  
+- **Scheduler**:  
+  - Preroll posts at **4:00 local time** in 15 global market hubs  
+  - Holy Minute posts at **4:20 local time** in those hubs  
+- **Relay**: 4:20 messages relayed to X (configurable on/off)  
+- **Commands**:  
+  - `/status` → last call, next scheduled call, news sources, X relay status  
+  - `/news` → headlines filtered by region (time zone aware)  
+  - `/token` → token snapshot (current price, 24h + 48h change, 24h volume)  
+- **Stateless design**: no files, only in-memory timers & short-term caches  
+- **Single log**: consistent INFO logging to `logs/bot.log`
 
-## Features
-- Modular design (each service can be swapped or removed without breaking the bot)
-- Telegram commands:
-  - `/status` → check if the bot is alive
-  - `/id` → return your chat ID
-  - `/token <symbol>` → fetch price anchor for a token (24h % | price | volume)
-  - `/news` → pull one crypto news headline
-- Fail-open behavior (if a module fails, the bot keeps running)
-- Simple JSON logging for state and prices
-
----
-
-## Setup
-1. Clone this repo  
-2. Install dependencies  
-3. Copy `.env.example` to `.env` and add your TELEGRAM_BOT_TOKEN  
-4. Run: `python app.py`
-
----
-
-✨ *Keep your canoe balanced. Bongterm > FOMO.*
+## Structure
