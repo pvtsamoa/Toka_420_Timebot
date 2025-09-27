@@ -20,7 +20,7 @@ NAV = {
 }
 
 def _val(x):
-    return x if (x is not None and x != "") else "n/a"
+    return str(x) if (x is not None and x != "") else "n/a"
 
 def status_text(last_holy: str, next_summary: str, x_on: bool) -> str:
     last_line = f"{NAV[last]}: {last_holy}"
