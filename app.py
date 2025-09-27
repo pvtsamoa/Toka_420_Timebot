@@ -8,12 +8,22 @@ from services.log import get_logger
 logger = get_logger()
 
 def build_app():
+    from commands.status import status
+    from commands.token import token
+    from commands.news import news
+    from commands.x import x
+    from commands.chatid import chatid
     load_dotenv(override=True)
     bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
     chat_id = os.getenv("TELEGRAM_DEV_CHAT_ID")  # group/channel/user id
     if not bot_token or not chat_id:
         raise RuntimeError("Missing TELEGRAM_BOT_TOKEN or TELEGRAM_DEV_CHAT_ID")
     app = Application.builder().token(bot_token).build()
+    app.add_handler(CommandHandler("status", status))
+    app.add_handler(CommandHandler("token", token))
+    app.add_handler(CommandHandler("news", news))
+    app.add_handler(CommandHandler("x", x))
+    app.add_handler(CommandHandler("chatid", chatid))
     app.add_error_handler(on_error)
     schedule_hubs(app.job_queue, int(chat_id))
     return app
