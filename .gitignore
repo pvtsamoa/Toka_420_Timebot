@@ -9,3 +9,7 @@ data/
 backups/
 logspip/
 *.tgz
+__pycache__/
+*.pyc
+*.bak.*
+structure.txt
