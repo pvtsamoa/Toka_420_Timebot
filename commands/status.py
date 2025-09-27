@@ -18,25 +18,25 @@ NEWS_HEALTH_DOMAINS = {
 }
 health_bits = []
 for src in NEWS_SOURCES:
-    url = NEWS_HEALTH_DOMAINS.get(src)
-    ok = False
-    try:
-        if url:
-            r = requests.get(url, timeout=3)
-            ok = r.ok
-    except Exception:
-        ok = False
-    health_bits.append(("✅" if ok else "⚠️") + f" {src}")
+url = NEWS_HEALTH_DOMAINS.get(src)
+ok = False
+try:
+if url:
+r = requests.get(url, timeout=3)
+ok = r.ok
+except Exception:
+ok = False
+health_bits.append(("✅" if ok else "⚠️") + f" {src}")
 health_line = "News health: " + "  |  ".join(health_bits)
 
     news_health=[]
-    for src in NEWS_SOURCES:
-        try:
+for src in NEWS_SOURCES:
+try:
             requests.get(f"https://{src.lower()}.com",timeout=3)
             news_health.append(f"✅ {src}")
-        except:
+except:
             news_health.append(f"❌ {src}")
-    health_line=\"News health: \"+\", \".join(news_health)
+health_line=\"News health: \"+\", \".join(news_health)
     from config import NEWS_SOURCES
     import requests
     msg = (
