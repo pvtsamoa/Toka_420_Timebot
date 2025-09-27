@@ -1,2 +1,2 @@
 #!/data/data/com.termux/files/usr/bin/bash
-# stop bot (placeholder)
+pkill -f "python app.py" || true

@@ -13,3 +13,12 @@ __pycache__/
 *.pyc
 *.bak.*
 structure.txt
+.env
+*.env
+.venv/
+__pycache__/
+*.pyc
+logs/
+data/
+backups/
+*.bak.*

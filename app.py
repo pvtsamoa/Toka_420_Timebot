@@ -1,1 +1,28 @@
-# Entrypoint for Toka 420 TimeBot
+import os
+from dotenv import load_dotenv
+from telegram.ext import Application, CommandHandler
+from services.error_handler import on_error
+from commands.status import status
+from commands.news import news
+from commands.token import token
+from scheduler.jobs import schedule_hubs
+from services.log import get_logger
+
+logger = get_logger()
+
+def build_app():
+    load_dotenv(override=True)
+    bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
+    chat_id = os.getenv("TELEGRAM_DEV_CHAT_ID")  # group/channel/user id
+    if not bot_token or not chat_id:
+        raise RuntimeError("Missing TELEGRAM_BOT_TOKEN or TELEGRAM_DEV_CHAT_ID")
+    app = Application.builder().token(bot_token).build()
+    app.add_error_handler(on_error)
+    app.add_handler(CommandHandler("status", status))
+    app.add_handler(CommandHandler("news",   news))
+    app.add_handler(CommandHandler("token",  token))
+    schedule_hubs(app.job_queue, int(chat_id))
+    return app
+
+if __name__ == "__main__":
+    build_app().run_polling(allowed_updates=None, stop_signals=None)

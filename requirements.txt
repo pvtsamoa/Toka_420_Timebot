@@ -1,1 +1,5 @@
-# python-telegram-bot, requests, python-dotenv, pytz, tweepy
+python-telegram-bot==21.*
+python-dotenv==1.*
+pytz==2025.*
+requests==2.*
+tweepy==4.*
