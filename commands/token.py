@@ -10,4 +10,6 @@ async def token(update: Update, context: ContextTypes.DEFAULT_TYPE):
            f"Price: {anchor['price']}\n"
            f"24h: {anchor['change_24h']}\n"
            f"24h Vol: {anchor['volume_24h']}")
+        f"Market Cap: {anchor.get('market_cap', 'n/a')}
+"
     await update.message.reply_text(msg)
