@@ -9,6 +9,26 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     nxt = next_scheduled_summary()
     srcs = ", ".join(sorted(set(sum((v for v in sources_by_region().values()), []))))
     xflag = "ON" if x_status() else "OFF"
+NEWS_HEALTH_DOMAINS = {
+    "CoinDesk": "https://www.coindesk.com",
+    "CoinTelegraph": "https://cointelegraph.com",
+    "Decrypt": "https://decrypt.co",
+    "The Block": "https://www.theblock.co",
+    "DL News": "https://www.dlnews.com",
+}
+health_bits = []
+for src in NEWS_SOURCES:
+    url = NEWS_HEALTH_DOMAINS.get(src)
+    ok = False
+    try:
+        if url:
+            r = requests.get(url, timeout=3)
+            ok = r.ok
+    except Exception:
+        ok = False
+    health_bits.append(("✅" if ok else "⚠️") + f" {src}")
+health_line = "News health: " + "  |  ".join(health_bits)
+
     news_health=[]
     for src in NEWS_SOURCES:
         try:
@@ -17,7 +37,7 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except:
             news_health.append(f"❌ {src}")
     health_line=\"News health: \"+\", \".join(news_health)
-    from services.news import NEWS_SOURCES
+    from config import NEWS_SOURCES
     import requests
     msg = (
         "✅ Toka 420 TimeBot — status\n"
