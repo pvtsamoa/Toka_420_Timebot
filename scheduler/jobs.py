@@ -12,6 +12,17 @@ from services.log import get_logger
 
 logger = get_logger()
 
+_target_chat_id: int | None = None
+
+def set_target_chat(chat_id: int):
+    global _target_chat_id
+    _target_chat_id = int(chat_id)
+    logger.info("Target chat set to %s", _target_chat_id)
+
+def get_target_chat() -> int | None:
+    return _target_chat_id
+
+
 # Global, single X relay instance used by /x and scheduler
 _xrelay = XRelay(X_RELAY_DEFAULT)
 
@@ -27,9 +38,10 @@ def x_status() -> bool:
     return _xrelay.enabled
 
 
-async def _send(ctx: ContextTypes.DEFAULT_TYPE, chat_id: int, text: str):
+async def _send(ctx: ContextTypes.DEFAULT_TYPE, chat_id: int | None, text: str):
     try:
-        await ctx.bot.send_message(chat_id=chat_id, text=text)
+        target = chat_id if chat_id is not None else get_target_chat()
+        await ctx.bot.send_message(chat_id=target, text=text)
     except Exception as e:
         logger.exception("Telegram send failed: %s", e)
 
@@ -38,7 +50,7 @@ async def _preroll_cb(ctx: ContextTypes.DEFAULT_TYPE, hub: str, chat_id: int):
     global _last_call
     _last_call = ("preroll", f"{hub} @ {datetime.utcnow().isoformat(timespec=seconds)}Z")
     logger.info("PREROLL fired: hub=%s", hub)
-    await _send(ctx, chat_id, preroll_text(hub))
+    await _send(ctx, None, preroll_text(hub))
 
 
 async def _holy_cb(ctx: ContextTypes.DEFAULT_TYPE, hub: str, chat_id: int):
@@ -47,7 +59,7 @@ async def _holy_cb(ctx: ContextTypes.DEFAULT_TYPE, hub: str, chat_id: int):
     text = holy_text(hub, RITUAL_TOKEN, anchor)
     _last_call = ("holy", f"{hub} @ {datetime.utcnow().isoformat(timespec=seconds)}Z")
     logger.info("HOLY fired: hub=%s | anchor=%s", hub, anchor)
-    await _send(ctx, chat_id, text)
+    await _send(ctx, None, text)
     _xrelay.post(text)
 
 
