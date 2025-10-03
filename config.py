@@ -1,24 +1,29 @@
-from dataclasses import dataclass, field
 import os
+from dotenv import load_dotenv
 
-@dataclass(frozen=True)
-class Settings:
-    TELEGRAM_BOT_TOKEN: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
-    TELEGRAM_SCOPE: str = os.getenv("TELEGRAM_SCOPE", "all")
-    FF_NEWS: bool = os.getenv("FF_NEWS", "1") == "1"
-    FF_X_RELAY: bool = os.getenv("FF_X_RELAY", "0") == "1"
-    FF_PRE_ROLL: bool = os.getenv("FF_PRE_ROLL", "1") == "1"
+# Load .env from project root
+load_dotenv()
 
-    # Split CHAT_IDS by comma → list of strings
-    CHAT_IDS: list[str] = field(
-        default_factory=lambda: os.getenv("CHAT_IDS", "").split(",") if os.getenv("CHAT_IDS") else []
-    )
+def _req(name: str) -> str:
+    v = os.getenv(name)
+    if not v:
+        raise RuntimeError(f"Missing required env: {name}")
+    return v
 
-    WEEDCOIN_TOKEN: str = os.getenv("WEEDCOIN_TOKEN", "Weedcoin")
+# --- Required ---
+TELEGRAM_BOT_TOKEN = _req("TELEGRAM_BOT_TOKEN")
+SUA_CHAT_ID        = _req("SUA_CHAT_ID")  # e.g., -100...
 
-    BASE_DIR: str = os.getcwd()
-    DATA_DIR: str = os.path.join(BASE_DIR, "data")
-    MEDIA_DIR: str = os.path.join(BASE_DIR, "media")
+# --- X / Twitter (optional; feature flag true only if all present) ---
+X_CONSUMER_KEY    = os.getenv("X_CONSUMER_KEY")
+X_CONSUMER_SECRET = os.getenv("X_CONSUMER_SECRET")
+X_ACCESS_TOKEN    = os.getenv("X_ACCESS_TOKEN")
+X_ACCESS_SECRET   = os.getenv("X_ACCESS_SECRET")
+HAS_X = all([X_CONSUMER_KEY, X_CONSUMER_SECRET, X_ACCESS_TOKEN, X_ACCESS_SECRET])
 
+# --- Optional (AI) ---
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 
-SETTINGS = Settings()
+# --- Defaults ---
+DEFAULT_TOKEN = os.getenv("DEFAULT_TOKEN", "WEEDCOIN")
+FALLBACK_CHAT = os.getenv("FALLBACK_CHAT", "SUA")

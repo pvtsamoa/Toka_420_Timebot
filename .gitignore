@@ -26,3 +26,7 @@ logs/
 # archives & logs
 *.tgz
 logs/*.log
+.env
+__pycache__/
+*.pyc
+logs/
