@@ -1,0 +1,47 @@
+import os
+from datetime import datetime
+from .types import RitualContext
+from services.i18n.loader import t, get_lang
+from services.astro.moon import phase_name, illumination
+
+def _anchor_line(ctx: RitualContext) -> str:
+    m = ctx.market
+    if m is None or m.price is None or m.change_24h_pct is None or m.volume_24h is None:
+        return f"{ctx.chat_token}: {t('fallback.data_unavailable','data unavailable')}"
+    sign = "▲" if m.change_24h_pct >= 0 else "▼"
+    return f"{ctx.chat_token}: {m.price:.4f} {sign}{m.change_24h_pct:.2f}% · 24h vol {m.volume_24h:,.0f}"
+
+def _moon_line(hub_tz: str) -> str:
+    if os.getenv("TOKA_SHOW_MOON", "").strip() not in ("1", "true", "TRUE", "yes", "on"):
+        return ""
+    try:
+        # Use naive local time stamp in templates; astro uses UTC-insensitive calc
+        dt = datetime.now()
+        name = phase_name(dt)
+        pct = illumination(dt)
+        return f"\n🌙 {t('labels.moon','Moon')}: {name} ({pct}%)"
+    except Exception:
+        return ""
+
+def template_pre_roll(ctx: RitualContext) -> str:
+    anchor = _anchor_line(ctx)
+    lang_sep = t("labels.hub_sep","|")
+    body = (
+        f"⏳ {t('labels.pre_roll','Pre-Roll')} {lang_sep} {ctx.hub.name} {lang_sep} {ctx.ritual_dt_iso}\n"
+        f"{anchor}\n"
+        f"{t('phrases.navigator','Navigator warm-up: breathe, prep, set intention. 🌊🌿')}"
+    )
+    body += _moon_line(ctx.hub.tz)
+    return body
+
+def template_holy_minute(ctx: RitualContext) -> str:
+    anchor = _anchor_line(ctx)
+    lang_sep = t("labels.hub_sep","|")
+    body = (
+        f"🔥 {t('labels.holy_minute','Holy Minute')} {lang_sep} {ctx.hub.name} {lang_sep} {ctx.ritual_dt_iso}\n"
+        f"{anchor}\n"
+        f"{t('quotes.service_first','\"O le ala i le pule o le tautua.\" Service first.')} "
+        f"{t('phrases.bongterm','We are Bongterm 🌱')}"
+    )
+    body += _moon_line(ctx.hub.tz)
+    return body

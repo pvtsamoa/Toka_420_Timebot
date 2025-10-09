@@ -1,0 +1,25 @@
+from .types import RitualContext
+
+def _anchor_line(ctx: RitualContext) -> str:
+    m = ctx.market
+    if m is None or m.price is None or m.change_24h_pct is None or m.volume_24h is None:
+        return f"{ctx.chat_token}: data unavailable"
+    sign = "▲" if m.change_24h_pct >= 0 else "▼"
+    return f"{ctx.chat_token}: {m.price:.4f} {sign}{m.change_24h_pct:.2f}% · 24h vol {m.volume_24h:,.0f}"
+
+# --- STUB CONTENT: minimal but production-safe ---
+def template_pre_roll(ctx: RitualContext) -> str:
+    anchor = _anchor_line(ctx)
+    return (
+        f"⏳ Pre-Roll | {ctx.hub.name} | {ctx.ritual_dt_iso}\n"
+        f"{anchor}\n"
+        "Navigator warm-up: breathe, prep, set intention 🌊🌿"
+    )
+
+def template_holy_minute(ctx: RitualContext) -> str:
+    anchor = _anchor_line(ctx)
+    return (
+        f"🔥 Holy Minute | {ctx.hub.name} | {ctx.ritual_dt_iso}\n"
+        f"{anchor}\n"
+        "“O le ala i le pule o le tautua.” Service first. We are Bongterm 🌱"
+    )

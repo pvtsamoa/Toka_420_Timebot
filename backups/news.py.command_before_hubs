@@ -1,0 +1,19 @@
+from telegram import Update
+from telegram.ext import ContextTypes
+from services.news import fetch_news
+from services.news_render import render_news
+
+async def news(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    args = context.args or []
+    lane = "all"
+    limit = 5
+    if args:
+        # /news 7  or  /news cannabis  or /news cannabis 7
+        for a in args:
+            at = a.lower()
+            if at.isdigit():
+                limit = max(1, min(20, int(at)))
+            elif at in ("all","cannabis","majors"):
+                lane = at
+    items = fetch_news(limit=limit, lane=lane)
+    await update.message.reply_markdown(render_news(items))

@@ -1,39 +1,28 @@
-import os, re, logging
-try:
-    import tweepy
-except Exception:
-    tweepy = None
+import os, logging, requests
+from requests_oauthlib import OAuth1
+from config import HAS_X, X_CONSUMER_KEY, X_CONSUMER_SECRET, X_ACCESS_TOKEN, X_ACCESS_SECRET
 
-TAG_HANDLE = "@weedcoinog"
-TAG_RE     = re.compile(r"(?i)@weedcoinog\b")
-HASH_RE    = re.compile(r"(?i)#weedcoin\b")
-TICK_RE    = re.compile(r"(?i)\$weedcoin\b")
+X_API_BASE = os.getenv("X_API_BASE", "https://api.twitter.com").rstrip("/")
 
-def enforce_tags(s: str) -> str:
-    extras = []
-    if not TAG_RE.search(s):  extras.append(TAG_HANDLE)
-    if not HASH_RE.search(s): extras.append("#Weedcoin")
-    if not TICK_RE.search(s): extras.append("$weedcoin")
-    return (s + " " + " ".join(extras)).strip()
+def _oauth1():
+    if not HAS_X:
+        raise RuntimeError("X not configured")
+    return OAuth1(
+        X_CONSUMER_KEY, X_CONSUMER_SECRET,
+        X_ACCESS_TOKEN,  X_ACCESS_SECRET,
+        signature_type='auth_header',
+    )
 
-def build_x_text(hub_name: str, token: str) -> str:
-    # Keep message short; token is currently fixed to $weedcoin in branding
-    return f"{hub_name} 4:20 • $weedcoin"
-
-def post_to_x(text: str):
-    text = enforce_tags(text)
-    if tweepy is None:
-        logging.warning("[X relay] Tweepy not installed; skipping")
-        return
-    k = os.getenv("X_API_KEY"); s = os.getenv("X_API_SECRET")
-    at = os.getenv("X_ACCESS_TOKEN"); as_ = os.getenv("X_ACCESS_SECRET")
-    if not all([k, s, at, as_]):
-        logging.warning("[X relay] Missing API creds; skipping")
-        return
+def post_to_x(text: str) -> tuple[bool, str]:
+    """Post a simple text tweet via X v2. Returns (ok, message_or_error)."""
     try:
-        auth = tweepy.OAuth1UserHandler(k, s, at, as_)
-        api = tweepy.API(auth)
-        api.update_status(status=text)
-        logging.info("[X] posted: %s", text)
+        url = f"{X_API_BASE}/2/tweets"
+        resp = requests.post(url, json={"text": text}, auth=_oauth1(), timeout=15)
+        if resp.status_code in (200, 201):
+            data = resp.json()
+            tid = (data.get("data") or {}).get("id")
+            return True, f"posted: {tid}"
+        return False, f"{resp.status_code}: {resp.text}"
     except Exception as e:
-        logging.warning("[X relay error] %s", e)
+        logging.exception("post_to_x failed")
+        return False, str(e)

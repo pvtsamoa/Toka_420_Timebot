@@ -1,0 +1,22 @@
+import json
+from pathlib import Path
+PATH = Path("data/chat_state.json")
+def _load():
+    if not PATH.exists(): return {}
+    try: return json.loads(PATH.read_text())
+    except Exception: return {}
+def _save(obj):
+    PATH.parent.mkdir(parents=True, exist_ok=True)
+    PATH.write_text(json.dumps(obj, ensure_ascii=False, indent=2))
+def get_chat_token(chat_id, default_token=""):
+    d=_load(); return (d.get(str(chat_id)) or {}).get("token", default_token)
+def set_chat_token(chat_id, token:str):
+    d=_load(); k=str(chat_id); r=d.get(k) or {}; r["token"]=(token or "").strip(); d[k]=r; _save(d); return r["token"]
+def get_chat_lang(chat_id, default="en"):
+    d=_load(); return (d.get(str(chat_id)) or {}).get("lang", default)
+def set_chat_lang(chat_id, lang:str):
+    d=_load(); k=str(chat_id); r=d.get(k) or {}; r["lang"]=(lang or "en").strip(); d[k]=r; _save(d); return r["lang"]
+def get_chat_show_moon(chat_id, default=False):
+    d=_load(); return (d.get(str(chat_id)) or {}).get("show_moon", default)
+def set_chat_show_moon(chat_id, flag:bool):
+    d=_load(); k=str(chat_id); r=d.get(k) or {}; r["show_moon"]=bool(flag); d[k]=r; _save(d); return r["show_moon"]

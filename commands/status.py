@@ -1,47 +1,57 @@
-# commands/status.py — Navigator Log style
-import os, datetime as dt
-from services.ritual import kiss_anchor
+from __future__ import annotations
+from telegram import Update
+from telegram.ext import ContextTypes
+from datetime import datetime, timezone
+from services.schedule_state import get_status
+from config import DEFAULT_TOKEN
+# optional imports guarded
+try:
+    from services.store.chat_state import get_chat_hub, get_chat_token
+except Exception:
+    def get_chat_hub(chat_id, default_hub="americas"): return default_hub
+    def get_chat_token(chat_id): return DEFAULT_TOKEN
 
-def _fmt_delta(delta: dt.timedelta) -> str:
-    secs = int(delta.total_seconds())
-    if secs < 0: secs = 0
-    h, r = divmod(secs, 3600); m, _ = divmod(r, 60)
-    return f"{h}h {m}m"
+def _fmt_dt(iso: str | None) -> str:
+    if not iso: return "—"
+    try:
+        dt = datetime.fromisoformat(iso)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        # show relative-ish + HH:MM UTC
+        return dt.strftime("%Y-%m-%d %H:%M UTC")
+    except Exception:
+        return "—"
 
-def _next_ritual(context):
-    # Find the soonest scheduled 4:20 across hubs
-    jobs = context.application.job_queue.jobs()
-    next_times = [j.next_t for j in jobs if j and j.name and j.name.startswith("420_") and j.next_t]
-    if not next_times:
-        return None, None
-    nxt = min(next_times)
-    hub = [j.name.replace("420_", "") for j in jobs if j.next_t == nxt][0]
-    return hub, nxt
+def _x_state() -> str:
+    try:
+        from services.x_state import is_on
+        return "on" if is_on() else "off"
+    except Exception:
+        return "off"
 
-async def status(update, context):
-    token = context.bot_data.get("token_override") or os.getenv("DEFAULT_TOKEN", "WEED")
-    anchor = kiss_anchor(token)
+async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    hub = get_chat_hub(chat_id, default_hub="americas")
+    token = get_chat_token(chat_id) or DEFAULT_TOKEN
 
-    # Scheduler snapshot
-    hub, nxt = _next_ritual(context)
-    now = dt.datetime.now(dt.timezone.utc)
-    nxt_txt = f"{nxt:%H:%M} UTC (in {_fmt_delta(nxt - now)})" if nxt else "—"
+    # schedule snapshots
+    holy   = get_status("holy_minute")
+    prerl  = get_status("preroll")
+    dawn   = get_status("news_dawn")
 
-    # Compose Navigator Log
-    lines = []
-    lines.append("🌿⛵️ Navigator Log — Toka v4")
-    lines.append("—" * 34)
-    lines.append("🕰 Scheduler")
-    lines.append(f"🟢 Next ritual:  {nxt_txt} — {hub if hub else ''}")
-    lines.append("• Last ritual:  —")
-    lines.append("")
-    lines.append("📊 Anchor:")
-    lines.append(f"  {anchor}")
-    lines.append("📚 Education: 🟢")
-    lines.append("🛡 Safety: 🟢")
-    lines.append("")
-    lines.append("✨🌺 Navigator’s Blessing ✨")
-    lines.append("🌿")
-    lines.append("")
-    lines.append("📈 Bongterm > FOMO — zoom out before you wig out.")
-    await update.message.reply_text("\n".join(lines))
+    # compose
+    parts = [
+        "🧭 *Toka Status*",
+        f"• Hub: `{hub}`   • X relay: *{_x_state()}*",
+        f"• Token: `{token}`",
+        "",
+        "*4:20 Schedule*",
+        f"— Preroll:   last {_fmt_dt(prerl['last_posted_utc'])} | next {_fmt_dt(prerl['next_run_utc'])}",
+        f"— Holy:      last {_fmt_dt(holy['last_posted_utc'])}  | next {_fmt_dt(holy['next_run_utc'])}",
+        "",
+        "*News Digests*",
+        f"— Dawn (Americas): last {_fmt_dt(dawn['last_posted_utc'])} | next {_fmt_dt(dawn['next_run_utc'])}",
+        "",
+        "Sail calm — roots before riches.",
+    ]
+    await update.message.reply_markdown("\n".join(parts))

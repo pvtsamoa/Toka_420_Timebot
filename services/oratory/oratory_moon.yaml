@@ -1,0 +1,197 @@
+meta:
+  version: 1
+  last_editor: ""
+  notes: "Toka moon counsel — oral tradition library (not templates)."
+
+guiding_constants:
+  transition_wisdom: true
+  plant_wisdom: true
+  faasamoa_as_technology: ["etak","pehe","va"]
+  moon_as_unifier: true
+
+phases:
+  new_moon:
+    setting: ""
+    chant: ""
+    observation: ""
+    counsel: ""
+    proverb: ""
+    weed_wisdom: ""
+    unity_line: ""
+    faasamoa_tags: []
+    tone: "ritual"
+    silence: true
+    alt_imagery: ""
+
+  waxing_crescent:
+    setting: ""
+    chant: ""
+    observation: ""
+    counsel: ""
+    proverb: ""
+    weed_wisdom: ""
+    unity_line: ""
+    faasamoa_tags: []
+    tone: "light"
+    silence: false
+    alt_imagery: ""
+
+  first_quarter:
+    setting: ""
+    chant: ""
+    observation: ""
+    counsel: ""
+    proverb: ""
+    weed_wisdom: ""
+    unity_line: ""
+    faasamoa_tags: []
+    tone: "light"
+    silence: false
+    alt_imagery: ""
+
+  waxing_gibbous:
+    setting: ""
+    chant: ""
+    observation: ""
+    counsel: ""
+    proverb: ""
+    weed_wisdom: ""
+    unity_line: ""
+    faasamoa_tags: []
+    tone: "light"
+    silence: false
+    alt_imagery: ""
+
+  full_moon:
+    # Sample authored speech (from Claude's draft) — feel free to refine wording
+    setting: "Toka stands at the bow, bathed in silver light."
+    chant: "Mālamalama — the illuminating moon."
+    observation: "Liquidity swells; voices rise; canoes load heavy; greed whispers sweet."
+    counsel: "Harvest what you need, not what you want. Share abundance. Guard the va between you and your position."
+    proverb: "O le tai e sui — tides change; roots remember."
+    weed_wisdom: "What swells must ebb; cure with patience; medicine > moonshot."
+    unity_line: "One moon, many canoes — navigators everywhere under the same light."
+    faasamoa_tags: ["etak","pehe","va"]
+    tone: "ritual"
+    silence: false
+    alt_imagery: "High tide; reef edge visible; Southern Hemisphere note allowed."
+
+  waning_gibbous:
+    setting: ""
+    chant: ""
+    observation: ""
+    counsel: ""
+    proverb: ""
+    weed_wisdom: ""
+    unity_line: ""
+    faasamoa_tags: []
+    tone: "light"
+    silence: false
+    alt_imagery: ""
+
+  last_quarter:
+    setting: ""
+    chant: ""
+    observation: ""
+    counsel: ""
+    proverb: ""
+    weed_wisdom: ""
+    unity_line: ""
+    faasamoa_tags: []
+    tone: "light"
+    silence: false
+    alt_imagery: ""
+
+  waning_crescent:
+    setting: ""
+    chant: ""
+    observation: ""
+    counsel: ""
+    proverb: ""
+    weed_wisdom: ""
+    unity_line: ""
+    faasamoa_tags: []
+    tone: "ritual"
+    silence: false
+    alt_imagery: ""
+
+transitions:
+  new_moon->waxing_crescent:
+    chant: ""
+    observation: "First stirring; movement unseen becomes motion."
+    counsel: "Small strokes; test instruments; set gentle course."
+    proverb: ""
+    weed_wisdom: "Darkness primes flowering; don’t rush light."
+    unity_line: ""
+    faasamoa_tags: ["etak","pehe"]
+    tone: "light"
+
+  waxing_crescent->first_quarter:
+    chant: ""
+    observation: ""
+    counsel: ""
+    proverb: ""
+    weed_wisdom: ""
+    unity_line: ""
+    faasamoa_tags: []
+    tone: "light"
+
+  first_quarter->waxing_gibbous:
+    chant: ""
+    observation: ""
+    counsel: ""
+    proverb: ""
+    weed_wisdom: ""
+    unity_line: ""
+    faasamoa_tags: []
+    tone: "light"
+
+  waxing_gibbous->full_moon:
+    chant: ""
+    observation: "Anticipation peaks; crews lean forward."
+    counsel: "Patience — don’t launch early; trim, don’t dump or ape."
+    proverb: ""
+    weed_wisdom: "Best high after full cure; timing over speed."
+    unity_line: ""
+    faasamoa_tags: ["pehe","va"]
+    tone: "ritual"
+
+  full_moon->waning_gibbous:
+    chant: ""
+    observation: "Euphoria turns to distribution."
+    counsel: "Harvest needs; give thanks; lighten load; avoid greed."
+    proverb: ""
+    weed_wisdom: "Share abundance; medicine is communal."
+    unity_line: ""
+    faasamoa_tags: ["va"]
+    tone: "ritual"
+
+  waning_gibbous->last_quarter:
+    chant: ""
+    observation: ""
+    counsel: ""
+    proverb: ""
+    weed_wisdom: ""
+    unity_line: ""
+    faasamoa_tags: []
+    tone: "light"
+
+  last_quarter->waning_crescent:
+    chant: ""
+    observation: ""
+    counsel: ""
+    proverb: ""
+    weed_wisdom: ""
+    unity_line: ""
+    faasamoa_tags: []
+    tone: "light"
+
+  waning_crescent->new_moon:
+    chant: ""
+    observation: "Quiet waters; learning and repair."
+    counsel: "Rest; journal; refit the canoe; prepare the crew."
+    proverb: ""
+    weed_wisdom: "Dry and cure; wisdom consolidates in darkness."
+    unity_line: ""
+    faasamoa_tags: ["etak","va"]
+    tone: "ritual"

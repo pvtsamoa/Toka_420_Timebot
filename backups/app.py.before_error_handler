@@ -1,10 +1,9 @@
 import logging
 from telegram.ext import Application, CommandHandler, ContextTypes
-from telegram.error import BadRequest, TimedOut, NetworkError
 from scheduler.jobs import register_toka_voice_jobs
 from config import TELEGRAM_BOT_TOKEN, SUA_CHAT_ID, HAS_X, DEFAULT_TOKEN
 
-# ---- soft command imports (won't crash if missing) ----
+# --- soft command imports (don't crash if one is missing) ---
 try:
     from commands.setchat import setchat as cmd_setchat
 except Exception:
@@ -50,33 +49,10 @@ try:
 except Exception:
     cmd_moon = None
 
-try:
-    from commands.health import health as cmd_health
-except Exception:
-    cmd_health = None
-
 logging.basicConfig(
     format="%(asctime)s | %(levelname)s | %(message)s",
     level=logging.INFO,
 )
-
-async def on_error(update, context):
-    # Never crash on handler exceptions
-    try:
-        err = getattr(context, "error", None)
-        logging.error("Handler error: %s", err, exc_info=err)
-        chat_id = None
-        try:
-            chat_id = update.effective_chat.id if update and update.effective_chat else None
-        except Exception:
-            chat_id = None
-        if chat_id:
-            try:
-                await context.application.bot.send_message(chat_id=chat_id, text="🌊 Toka drifted but stays afloat. (Logged)")
-            except Exception:
-                pass
-    except Exception:
-        pass
 
 async def _send_heartbeat(context):
     try:
@@ -100,8 +76,9 @@ async def status_fallback(update, context: ContextTypes.DEFAULT_TYPE):
 def build_app() -> Application:
     app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
 
-    # Core basics
+    # Core basics always available
     app.add_handler(CommandHandler("start", start))
+    # Prefer project /status if present; else minimal fallback
     app.add_handler(CommandHandler("status", cmd_status if cmd_status else status_fallback))
 
     # Optional commands (attach only if import succeeded)
@@ -113,16 +90,12 @@ def build_app() -> Application:
     if cmd_chatid:  app.add_handler(CommandHandler("chatid",  cmd_chatid))
     if cmd_lang:    app.add_handler(CommandHandler("lang",    cmd_lang))
     if cmd_moon:    app.add_handler(CommandHandler("moon",    cmd_moon))
-    if cmd_health:  app.add_handler(CommandHandler("health",  cmd_health))
 
-    # Heartbeat once the loop starts
+    # heartbeat once the loop starts
     app.job_queue.run_once(_send_heartbeat, when=0)
 
-    # Daily jobs (rituals + hub digests)
+    # register daily jobs (04:00 / 04:20 LA + hub digests) from scheduler/jobs.py
     register_toka_voice_jobs(app.job_queue)
-
-    # Global error handler
-    app.add_error_handler(on_error)
 
     return app
 

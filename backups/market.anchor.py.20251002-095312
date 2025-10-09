@@ -1,0 +1,22 @@
+import os
+from typing import Optional
+from services.rituals.types import MarketAnchor
+
+def get_market_anchor(symbol: str) -> MarketAnchor:
+    """
+    KISS: Pull from env (smoke values) until we wire live feeds.
+    Fields left None are handled gracefully by templates.
+    Env:
+      TOKA_SMOKE_PRICE, TOKA_SMOKE_CHANGE_PCT, TOKA_SMOKE_VOL_24H
+    """
+    def _f(env_key: str) -> Optional[float]:
+        v = os.getenv(env_key)
+        try:
+            return float(v) if v is not None else None
+        except ValueError:
+            return None
+
+    price = _f("TOKA_SMOKE_PRICE")
+    change = _f("TOKA_SMOKE_CHANGE_PCT")
+    vol = _f("TOKA_SMOKE_VOL_24H")
+    return MarketAnchor(symbol=symbol.upper(), price=price, change_24h_pct=change, volume_24h=vol)

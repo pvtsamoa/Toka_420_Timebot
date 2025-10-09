@@ -7,7 +7,6 @@ from pathlib import Path
 # Target chat persistence
 # ----------------------------
 _TARGET_FILE = "data/target_chat.txt"
-DEFAULT_CHAT = -1002577262067  # SUA group
 
 def set_target_chat(chat_id):
     p = Path(_TARGET_FILE)
@@ -19,16 +18,16 @@ def get_target_chat() -> Optional[int]:
     try:
         p = Path(_TARGET_FILE)
         if not p.exists():
-            return DEFAULT_CHAT
+            return None
         raw = p.read_text().strip()
         if not raw:
-            return DEFAULT_CHAT
+            return None
         try:
             return int(raw)
         except Exception:
             return raw  # allow string identifiers if ever used
     except Exception:
-        return DEFAULT_CHAT
+        return None
 
 # ----------------------------
 # Hub timezones for 4:20 digests
@@ -46,14 +45,10 @@ HUB_TZS = {
 async def _send_telegram(context, chat_id, text, parse_md: bool = True):
     if not text:
         return
-    try:
-        if parse_md:
-            await context.bot.send_message(chat_id=chat_id, text=text, parse_mode="Markdown")
-        else:
-            await context.bot.send_message(chat_id=chat_id, text=text)
-    except Exception:
-        # Never crash the job on send errors
-        pass
+    if parse_md:
+        await context.bot.send_message(chat_id=chat_id, text=text, parse_mode="Markdown")
+    else:
+        await context.bot.send_message(chat_id=chat_id, text=text)
 
 def _fmt_price(p):
     try:
@@ -77,10 +72,9 @@ def _relay_enabled():
 
 def _post_x(text: str, retries: int = 1):
     try:
-        if not text:
-            return
         from services.x_relay import post_with_backoff
-        post_with_backoff(text, retries=retries)
+        if text:
+            post_with_backoff(text, retries=retries)
     except Exception:
         pass
 
@@ -92,15 +86,12 @@ async def job_toka_preroll(context):
     if not chat_id:
         return
 
-    try:
-        from services.render import render_ritual
-        msg = render_ritual("preroll", chat_id)
-    except Exception as e:
-        msg = f"🌊 Toka drifted (preroll): {e}"
-
+    # Lazy imports to avoid hard crashes if optional modules are absent
+    from services.render import render_ritual
+    msg = render_ritual("preroll", chat_id)
     await _send_telegram(context, chat_id, msg, parse_md=False)
 
-    # X mirror (optional; non-blocking)
+    # X mirror (optional)
     try:
         if _relay_enabled():
             from services.store.chat_state import get_chat_token
@@ -121,15 +112,11 @@ async def job_toka_holy(context):
     if not chat_id:
         return
 
-    try:
-        from services.render import render_ritual
-        msg = render_ritual("holy_minute", chat_id)
-    except Exception as e:
-        msg = f"🌊 Toka drifted (holy): {e}"
-
+    from services.render import render_ritual
+    msg = render_ritual("holy_minute", chat_id)
     await _send_telegram(context, chat_id, msg, parse_md=False)
 
-    # X mirror (optional; non-blocking)
+    # X mirror (optional)
     try:
         if _relay_enabled():
             from services.store.chat_state import get_chat_token
@@ -158,14 +145,10 @@ async def job_toka_news_digest(context):
     if not chat_id:
         return
 
-    try:
-        from services.news import fetch_news
-        from services.news_render import render_news
-        items = fetch_news(limit=5, lane="cannabis", hub="americas")
-        msg = "🌅 *Toka’s Dawn Digest*\n" + render_news(items)
-    except Exception as e:
-        msg = f"🌊 Toka drifted (dawn digest): {e}"
-
+    from services.news import fetch_news
+    from services.news_render import render_news
+    items = fetch_news(limit=5, lane="cannabis", hub="americas")
+    msg = "🌅 *Toka’s Dawn Digest*\n" + render_news(items)
     await _send_telegram(context, chat_id, msg, parse_md=True)
 
     try:
@@ -180,15 +163,11 @@ async def _post_hub_news_420(context, hub: str):
     if not chat_id:
         return
 
-    try:
-        from services.news import fetch_news
-        from services.news_render import render_news
-        items = fetch_news(limit=5, lane="cannabis", hub=hub)
-        header = f"⏰ 4:20 {hub.title()} Digest"
-        msg = header + "\n" + render_news(items)
-    except Exception as e:
-        msg = f"🌊 Toka drifted ({hub} digest): {e}"
-
+    from services.news import fetch_news
+    from services.news_render import render_news
+    items = fetch_news(limit=5, lane="cannabis", hub=hub)
+    header = f"⏰ 4:20 {hub.title()} Digest"
+    msg = header + "\n" + render_news(items)
     await _send_telegram(context, chat_id, msg, parse_md=True)
 
     try:

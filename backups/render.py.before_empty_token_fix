@@ -1,0 +1,31 @@
+from services.anchors import get_anchor
+from services.anchor_render import render_kiss_anchor
+from services.voice_toka import get_toka_line
+from services.store import get_chat_token
+
+def render_ritual(mode:str, chat_id:int)->str:
+    token = get_chat_token(chat_id)
+    try:
+        a = get_anchor(token)
+    except Exception as e:
+        return f"Toka drifts in silence — failed to fetch anchor for {token}: {e}"
+    kiss = render_kiss_anchor(a["symbol"], a["price"], a["change24h_pct"], a["volume24h_usd"])
+    voice = get_toka_line(
+        mode,
+        price=f"${a['price']:.4f}",
+        change=f"{a['change24h_pct']:+.2f}%",
+        volume=f"${a['volume24h_usd']/1000:.1f}k"
+    )
+    # Moon hook (fully guarded)
+    moon = ""
+    try:
+        from services.store.chat_state import get_chat_show_moon
+        if get_chat_show_moon(chat_id):
+            try:
+                from services.moon import toka_moon_sentence
+                moon = "\nMoon over reef: " + toka_moon_sentence()
+            except Exception:
+                moon = ""
+    except Exception:
+        pass
+    return f"{voice}\n{kiss}{moon}"

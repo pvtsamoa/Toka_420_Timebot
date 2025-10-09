@@ -1,0 +1,12 @@
+labels:
+  pre_roll: "Pre-Roll"
+  holy_minute: "Holy Minute"
+  moon: "Moon"
+  hub_sep: "|"
+phrases:
+  navigator: "Navigator warm-up: breathe, prep, set intention. 🌊🌿"
+  bongterm: "We are Bongterm 🌱"
+quotes:
+  service_first: "\"O le ala i le pule o le tautua.\" Service first."
+fallback:
+  data_unavailable: "data unavailable"

@@ -1,0 +1,22 @@
+from telegram import Update
+from telegram.ext import ContextTypes
+from services.news import fetch_news
+from services.news_render import render_news
+
+LANES = {"all","cannabis","majors"}
+HUBS  = {"asia","europe","americas","oceania"}
+
+async def news(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    args = [a.lower() for a in (context.args or [])]
+    lane = "all"
+    hub  = "americas"
+    limit = 5
+    for a in args:
+        if a.isdigit():
+            limit = max(1, min(20, int(a)))
+        elif a in LANES:
+            lane = a
+        elif a in HUBS:
+            hub = a
+    items = fetch_news(limit=limit, lane=lane, hub=hub)
+    await update.message.reply_markdown(render_news(items))

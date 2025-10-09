@@ -1,0 +1,55 @@
+import logging
+from telegram import Update
+from commands.token import token
+from commands.lang import lang
+from commands.moon import moon
+from commands.status import status
+from telegram.ext import Application, CommandHandler, ContextTypes
+
+from config import TELEGRAM_BOT_TOKEN, SUA_CHAT_ID, HAS_X, DEFAULT_TOKEN
+from commands.ping import ping
+
+logging.basicConfig(
+    format="%(asctime)s | %(levelname)s | %(message)s",
+    level=logging.INFO,
+)
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("🌊 Toka420 online. Use /status")
+
+async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    x_state = "enabled" if HAS_X else "disabled"
+    await update.message.reply_text(
+        f"✅ Bot alive\n— Default token: {DEFAULT_TOKEN}\n— X relay: {x_state}"
+    )
+
+async def _send_heartbeat(context):
+    bot = context.application.bot
+    try:
+        await bot.send_message(
+            chat_id=int(SUA_CHAT_ID),
+            text="🌱 Toka420 booted and reading .env successfully. Use /status"
+        )
+        logging.info("Startup heartbeat sent to %s", SUA_CHAT_ID)
+    except Exception as e:
+        logging.error("Failed to send startup heartbeat: %s", e)
+
+def build_app() -> Application:
+    app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
+    app.add_handler(CommandHandler('status', status))
+
+    app.add_handler(CommandHandler('lang', lang))
+    app.add_handler(CommandHandler('moon', moon))
+
+    app.add_handler(CommandHandler('token', token))
+
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("status", status))
+    app.add_handler(CommandHandler("ping", ping))
+    # Fire heartbeat right after the event loop starts
+    app.job_queue.run_once(_send_heartbeat, when=0)
+    return app
+
+if __name__ == "__main__":
+    application = build_app()
+    application.run_polling(allowed_updates=None)

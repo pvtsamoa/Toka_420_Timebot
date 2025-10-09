@@ -1,0 +1,12 @@
+labels:
+  pre_roll: "Taimi Faʻamafanafanaga"
+  holy_minute: "Minute Paʻia"
+  moon: "Masina"
+  hub_sep: "|"
+phrases:
+  navigator: "Fa'amalū le mafaufau; tapena lou loto. 🌊🌿"
+  bongterm: "Ua tatou i le Bongterm 🌱"
+quotes:
+  service_first: "“O le ala i le pule o le tautua.”"
+fallback:
+  data_unavailable: "fa'amaumauga e le o avanoa"

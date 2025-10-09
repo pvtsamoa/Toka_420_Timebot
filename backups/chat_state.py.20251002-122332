@@ -1,0 +1,41 @@
+import json, os, threading
+from typing import Dict
+
+_STATE_PATH = os.getenv("TOKA_STATE_FILE", "data/chat_state.json")
+_DEFAULT_TOKEN = os.getenv("TOKA_DEFAULT_TOKEN", "WEED")
+_LOCK = threading.Lock()
+
+def _ensure_dirs():
+    os.makedirs(os.path.dirname(_STATE_PATH), exist_ok=True)
+
+def _load() -> Dict:
+    _ensure_dirs()
+    if not os.path.exists(_STATE_PATH):
+        return {"tokens": {}}
+    try:
+        with open(_STATE_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {"tokens": {}}
+
+def _save(state: Dict) -> None:
+    _ensure_dirs()
+    tmp = _STATE_PATH + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(state, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, _STATE_PATH)
+
+def set_chat_token(chat_id: int, token: str) -> None:
+    with _LOCK:
+        st = _load()
+        st.setdefault("tokens", {})[str(chat_id)] = token.upper()
+        _save(st)
+
+def get_chat_token(chat_id: int) -> str:
+    with _LOCK:
+        st = _load()
+        tok = st.get("tokens", {}).get(str(chat_id))
+        return tok if tok else _DEFAULT_TOKEN
+
+def get_default_token() -> str:
+    return _DEFAULT_TOKEN

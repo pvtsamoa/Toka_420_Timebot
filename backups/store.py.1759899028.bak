@@ -1,0 +1,14 @@
+import json
+from pathlib import Path
+PATH = Path("data/chat_tokens.json")
+def _load():
+    if not PATH.exists(): return {}
+    try: return json.loads(PATH.read_text())
+    except Exception: return {}
+def _save(obj):
+    PATH.parent.mkdir(parents=True, exist_ok=True)
+    PATH.write_text(json.dumps(obj, ensure_ascii=False, indent=2))
+def get_chat_token(chat_id, default_token="WEEDCOIN"):
+    data=_load(); return data.get(str(chat_id)) or default_token
+def set_chat_token(chat_id, token:str):
+    data=_load(); data[str(chat_id)]=token.strip(); _save(data); return data[str(chat_id)]
