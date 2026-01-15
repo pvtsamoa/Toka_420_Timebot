@@ -1,34 +1,86 @@
 import logging
+import os
 from telegram import Update
 from telegram.ext import ContextTypes
+from services.dexscreener import get_anchor
 
 logger = logging.getLogger(__name__)
 
+
 async def token(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Get or set the current crypto token for price queries."""
-    if not context.args:
-        cur = context.bot_data.get("token_override")
-        await update.message.reply_text(f"Current token: {cur or 'DEFAULT (Weedcoin)'}")
-        return
+    """Show 1-day and 3-day price movement with liquidity for a token (default: Weedcoin)."""
+    user_id = update.effective_user.id
     
-    new_token = context.args[0].strip()
+    # Get token symbol from args or default
+    token_symbol = None
+    if context.args and context.args[0].strip():
+        token_symbol = context.args[0].strip().lower()
+        
+        # Input validation
+        if len(token_symbol) > 100:
+            await update.message.reply_text("❌ Token too long (max 100 chars)")
+            logger.warning(f"Token too long: {token_symbol} (user: {user_id})")
+            return
+        
+        if not all(c.isalnum() or c in "-_" for c in token_symbol):
+            await update.message.reply_text("❌ Invalid token format. Use alphanumeric, dash, or underscore only")
+            logger.warning(f"Invalid token format: {token_symbol} (user: {user_id})")
+            return
+    else:
+        # Default to Weedcoin
+        token_symbol = os.getenv("DEFAULT_TOKEN", "weedcoin").lower()
     
-    # Input validation
-    if not new_token:
-        await update.message.reply_text("❌ Token cannot be empty")
-        return
+    logger.info(f"Token price query for: {token_symbol} (user: {user_id})")
     
-    if len(new_token) > 100:
-        await update.message.reply_text("❌ Token too long (max 100 chars)")
-        return
-    
-    if not all(c.isalnum() or c in "-_" for c in new_token):
-        await update.message.reply_text("❌ Invalid token format. Use alphanumeric, dash, or underscore only")
-        return
-    
-    context.bot_data["token_override"] = new_token
-    logger.info(f"Token set to: {new_token} (user: {update.effective_user.id})")
-    await update.message.reply_text(f"✅ Token set for this session: {new_token}")
+    try:
+        # Fetch anchor data from DexScreener
+        anchor = get_anchor(token_symbol)
+        
+        if not anchor:
+            await update.message.reply_text(
+                f"❌ Could not find token: `{token_symbol}`\n\n"
+                f"Try `/token weedcoin` or `/token btc`",
+                parse_mode="Markdown"
+            )
+            logger.warning(f"Token not found: {token_symbol}")
+            return
+        
+        # Format response with price movement
+        symbol = anchor.get("symbol", "?").upper()
+        price = anchor.get("price", "?")
+        change24 = anchor.get("change24", "±0.00%")
+        vol24 = anchor.get("vol24", "$0")
+        dex = anchor.get("dex", "").upper()
+        
+        # Build message
+        message = f"""
+💰 **{symbol}** Price Chart
+
+🔢 **Current Price**
+`{price}`
+
+📈 **24h Movement**
+{change24}
+
+💧 **24h Liquidity**
+{vol24}
+
+🏪 **Exchange**: {dex}
+
+────────────────────
+*Try `/token` again for fresh data*
+*Use `/news` for market updates*
+"""
+        
+        await update.message.reply_text(message, parse_mode="Markdown")
+        logger.info(f"✅ Sent price data for {symbol} (user: {user_id})")
+        
+    except Exception as e:
+        logger.exception(f"Error fetching token data for {token_symbol}: {e}")
+        await update.message.reply_text(
+            f"⚠️ Error fetching price data. Try again later.",
+            parse_mode="Markdown"
+        )
 
 
 async def health_check(update: Update, context: ContextTypes.DEFAULT_TYPE):

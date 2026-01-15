@@ -7,8 +7,23 @@ from config import SETTINGS
 
 logger = logging.getLogger(__name__)
 
-# Regional feed sets (curated, fast, reliable)
-FEEDS_BY_SCOPE = {
+# News category sources - reliable feeds only
+CRYPTO_NEWS = [
+    "https://www.coindesk.com/arc/outboundfeeds/rss/",
+    "https://cointelegraph.com/rss",
+    "https://decrypt.co/feed",
+    "https://bitcoinmagazine.com/feed/rss",
+    "https://cryptoslate.com/feed/",
+]
+
+MARKET_NEWS = [
+    "https://www.cnbc.com/id/100003114/device/rss/rss.html",
+    "https://feeds.bloomberg.com/markets/news.rss",
+    "https://feeds.reuters.com/reuters/businessNews",
+]
+
+# Regional fallback feeds
+REGIONAL_FEEDS = {
     "apac": [
         "https://ambcrypto.com/feed/",
         "https://www.newsbtc.com/feed/",
@@ -26,26 +41,9 @@ FEEDS_BY_SCOPE = {
     ],
 }
 
-# Fallback "global" rotation if TELEGRAM_SCOPE=all or unknown
-GLOBAL_FEEDS = [
-    "https://www.coindesk.com/arc/outboundfeeds/rss/",
-    "https://cointelegraph.com/rss",
-    "https://decrypt.co/feed",
-]
+# Track user call counts for rotation
+_user_calls = {}
 
-def _pick_feeds(arg_scope: str | None) -> list[str]:
-    """Select appropriate feeds based on scope."""
-    # CLI override wins (e.g., /news apac)
-    if arg_scope and arg_scope.lower() in FEEDS_BY_SCOPE:
-        logger.debug(f"Using {arg_scope} feeds from command override")
-        return FEEDS_BY_SCOPE[arg_scope.lower()]
-    # .env scope (apac|emea|amer)
-    env_scope = (SETTINGS.TELEGRAM_SCOPE or "").lower()
-    if env_scope in FEEDS_BY_SCOPE:
-        logger.debug(f"Using {env_scope} feeds from config")
-        return FEEDS_BY_SCOPE[env_scope]
-    logger.debug("Using global feeds")
-    return GLOBAL_FEEDS
 
 def _fetch_one(url: str):
     """Fetch the first item from an RSS feed."""
@@ -73,43 +71,89 @@ def _fetch_one(url: str):
     except ET.ParseError as e:
         logger.warning(f"XML parse error in feed {url}: {e}")
         return None
-    except Exception as e:
-        logger.exception(f"Unexpected error fetching feed {url}: {e}")
-        return None
+
+
+def _get_category_cycle(user_id: int) -> str:
+    """Rotate through 2 categories per user call (crypto → markets)."""
+    global _user_calls
+    
+    call_count = _user_calls.get(user_id, 0)
+    category_idx = call_count % 2
+    
+    _user_calls[user_id] = call_count + 1
+    
+    categories = ["crypto", "market"]
+    return categories[category_idx]
+
 
 async def news(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Fetch and send latest cannabis/crypto news."""
+    """Send rotating news: cannabis studies → cannabis news → crypto cannabis news."""
     user_id = update.effective_user.id
+    logger.info(f"News command requested (user: {user_id})")
     
-    # optional region override: /news apac|emea|amer
-    override = None
-    if context.args:
-        override = context.args[0].strip().lower()
+    try:
+        # Get rotation category for this user
+        category = _get_category_cycle(user_id)
         
-        # Validate scope argument
-        valid_scopes = list(FEEDS_BY_SCOPE.keys()) + ["all"]
-        if override not in valid_scopes:
-            logger.info(f"Invalid scope requested: {override} (user: {user_id})")
-            await update.message.reply_text(f"❌ Invalid scope. Use: {', '.join(valid_scopes)}")
+        # Select feeds based on category
+        if category == "crypto":
+            feeds = CRYPTO_NEWS
+            emoji = "💰"
+            title = "Cryptocurrency News"
+        else:  # market
+            feeds = MARKET_NEWS
+            emoji = "📈"
+            title = "Market & Finance News"
+        
+        # Try each feed until we get an article
+        result = None
+        for url in feeds:
+            result = _fetch_one(url)
+            if result:
+                logger.debug(f"✅ Got article from {url}")
+                break
+        
+        # Fallback to regional feeds if all failed
+        if not result:
+            logger.debug("All category feeds failed, trying regional fallback")
+            scope = (SETTINGS.TELEGRAM_SCOPE or "all").lower()
+            fallback_feeds = REGIONAL_FEEDS.get(scope, [])
+            for url in fallback_feeds:
+                result = _fetch_one(url)
+                if result:
+                    logger.debug(f"✅ Got article from fallback feed")
+                    break
+        
+        if not result:
+            await update.message.reply_text(
+                f"⚠️ Could not fetch {title.lower()} right now.\n\n"
+                f"Try again in a few moments.",
+                parse_mode="Markdown"
+            )
+            logger.warning(f"Could not fetch any news for category {category}")
             return
-    
-    feeds = _pick_feeds(override)
-    logger.info(f"Fetching news (scope: {override or 'default'}, user: {user_id})")
+        
+        chan_title, article_title, link = result
+        
+        message = f"""
+{emoji} **{title}**
 
-    for u in feeds:
-        hit = _fetch_one(u)
-        if hit:
-            source, title, link = hit
-            lines = [
-                "📰 Market Pulse",
-                "────────────────",
-                f"{source}" if source else "Crypto News",
-                f"• {title}",
-                f"🔗 {link}",
-            ]
-            logger.info(f"Sent news article from {source} (user: {user_id})")
-            await update.message.reply_text("\n".join(lines))
-            return
+**{article_title}**
 
-    logger.info(f"No fresh headlines available (user: {user_id})")
-    await update.message.reply_text("ℹ️ No fresh headlines right now.")
+📰 Source: {chan_title}
+🔗 [Read more]({link})
+
+────────────────────
+*Call `/news` again for the next category*
+*Categories rotate: Crypto → Markets*
+"""
+        
+        await update.message.reply_text(message, parse_mode="Markdown")
+        logger.info(f"✅ Sent {category} news to user {user_id}: {article_title[:50]}")
+        
+    except Exception as e:
+        logger.exception(f"Error in news command: {e}")
+        await update.message.reply_text(
+            "⚠️ Error fetching news. Try again later.",
+            parse_mode="Markdown"
+        )

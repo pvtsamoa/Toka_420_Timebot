@@ -34,19 +34,19 @@ def _load_json(path):
         return []
 
 def load_media_bank():
-    """Load all media files (jokes, safety tips, proverbs)."""
+    """Load all media files (quotes, safety tips, tokens)."""
     base = os.path.join(os.path.dirname(__file__), "..", "media")
     try:
         media = {
-            "jokes": _load_json(os.path.join(base, "jokes.json")) or [],
+            "quotes": _load_json(os.path.join(base, "cannabis_quotes.json")) or [],
             "safety": _load_json(os.path.join(base, "safety.json")) or [],
-            "proverbs": _load_json(os.path.join(base, "proverbs.json")) or [],
+            "tokens": _load_json(os.path.join(base, "cannabis_tokens.json")) or [],
         }
-        logger.debug(f"Loaded media bank: {len(media['jokes'])} jokes, {len(media['safety'])} safety tips, {len(media['proverbs'])} proverbs")
+        logger.debug(f"Loaded media bank: {len(media['quotes'])} quotes, {len(media['safety'])} safety tips, {len(media['tokens'])} tokens")
         return media
     except Exception as e:
         logger.exception(f"Failed to load media bank: {e}")
-        return {"jokes": [], "safety": [], "proverbs": []}
+        return {"quotes": [], "safety": [], "tokens": []}
 
 MEDIA = load_media_bank()
 
@@ -63,17 +63,45 @@ def kiss_anchor(token_id: str):
         return f"{token_id or DEFAULT_TOKEN}: price n/a, vol n/a, 24h ±0.00%"
 
 def build_ritual_text(hub_name: str, token_id: str = None):
-    """Build the formatted ritual message for a hub."""
+    """Build the formatted ritual message for a hub.
+    
+    Format: Blessing → Token → Safety → Quote
+    """
     try:
-        anchor = kiss_anchor(token_id or DEFAULT_TOKEN)
-        proverb = _pick(MEDIA.get("proverbs", []), "")
-        shield = _pick(MEDIA.get("safety", []), "DYOR • Stay balanced • Obey local laws")
+        # Get blessing, token, safety tip, and quote
+        from services.navigator_blessing import get_blessing
         
-        lines = [f"🌊 Toka 4:20 — {hub_name}", f"📈 {anchor}", f"🛡 {shield}"]
-        if proverb:
-            lines.append(f"🌺 {proverb}")
+        blessing = get_blessing()
+        token = _pick(MEDIA.get("tokens", []), {"symbol": "WEED", "name": "Weedcoin"})
+        safety = _pick(MEDIA.get("safety", []), "DYOR • Use 2FA • Secure your keys")
+        quote_obj = _pick(MEDIA.get("quotes", []), {})
+        quote = f'"{quote_obj.get("quote", "Stay blessed")}" — {quote_obj.get("source", "Cannabis Culture")}' if quote_obj else ""
+        
+        # Get price anchor for featured token
+        anchor = kiss_anchor(token.get("symbol", "WEED").lower())
+        
+        lines = [
+            f"🌿⛵️ SPARK IT UP — 4:20 in {hub_name}!",
+            "",
+            "✨ Navigator's Blessing",
+            blessing,
+            "",
+            f"💰 Featured Token: {token.get('name', 'Cannabis')}",
+            anchor,
+            "",
+            "🛡️ Crypto Safety",
+            safety,
+        ]
+        
+        if quote:
+            lines.append("")
+            lines.append("🎬 Cannabis Culture")
+            lines.append(quote)
+        
+        lines.append("")
+        lines.append("Spark responsibly. HODL wise. 🌲")
         
         return "\n".join(lines)
     except Exception as e:
         logger.exception(f"Error building ritual text for {hub_name}: {e}")
-        return f"🌊 Toka 4:20 — {hub_name}\n⚠️ Error generating ritual text. Please retry."
+        return f"🌿⛵️ SPARK IT UP — 4:20 in {hub_name}!\n⚠️ Error generating ritual. Please retry."

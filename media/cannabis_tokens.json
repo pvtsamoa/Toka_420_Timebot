@@ -1,0 +1,32 @@
+[
+  {
+    "symbol": "POT",
+    "name": "Potcoin",
+    "description": "The OG cannabis blockchain"
+  },
+  {
+    "symbol": "WEED",
+    "name": "Weedcoin",
+    "description": "Cannabis community token"
+  },
+  {
+    "symbol": "HIGH",
+    "name": "High Token",
+    "description": "Ethereum-based cannabis"
+  },
+  {
+    "symbol": "GREEN",
+    "name": "GreenCoin",
+    "description": "Eco & cannabis focused"
+  },
+  {
+    "symbol": "MMED",
+    "name": "MindMed",
+    "description": "Psychedelics & wellness"
+  },
+  {
+    "symbol": "HEMP",
+    "name": "Hemp Coin",
+    "description": "Cannabis agriculture"
+  }
+]

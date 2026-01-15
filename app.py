@@ -9,9 +9,9 @@ from services.config_validator import validate_config
 from services.error_handler import on_error
 from scheduler import schedule_hubs
 from services.ritual_time import ritual_call
+from commands.start import start
 from commands.status import status
 from commands.news import news
-from commands.studies import studies
 from commands.token import token, health_check
 
 # Configure logging
@@ -37,24 +37,24 @@ def build_app():
     if not bot_token:
         raise ValueError("TELEGRAM_BOT_TOKEN not set")
     
-    app = Application.builder().token(bot_token).build()
+    # Build without job_queue (not critical for now)
+    builder = Application.builder().token(bot_token)
+    # Disable job_queue to avoid weak reference issues in PTB 20.3
+    builder.job_queue(None)
+    
+    app = builder.build()
     
     # Add error handler
     app.add_error_handler(on_error)
     
     # Register command handlers
+    app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("status", status))
     app.add_handler(CommandHandler("news", news))
-    app.add_handler(CommandHandler("studies", studies))
     app.add_handler(CommandHandler("token", token))
     app.add_handler(CommandHandler("health", health_check))
     
-    # Schedule recurring rituals
-    logger.info("Scheduling hub rituals...")
-    if app.job_queue:
-        schedule_hubs(app.job_queue, ritual_call)
-    
-    logger.info("✅ Bot initialized successfully")
+    logger.info("✅ Bot initialized successfully (scheduler: manual only for now)")
     return app
 
 async def shutdown_handler(signum, frame):
@@ -65,7 +65,7 @@ async def shutdown_handler(signum, frame):
     if app:
         if app.job_queue:
             logger.info("Stopping job queue...")
-            app.job_queue.stop()
+            await app.job_queue.stop()
         logger.info("Stopping application...")
         await app.stop()
     
@@ -88,9 +88,7 @@ if __name__ == "__main__":
         # Build bot
         app = build_app()
         
-        # Register shutdown handlers
-        signal.signal(signal.SIGTERM, lambda s, f: __import__('asyncio').run(shutdown_handler(s, f)))
-        signal.signal(signal.SIGINT, lambda s, f: __import__('asyncio').run(shutdown_handler(s, f)))
+        # No need for manual signal handlers - run_polling handles them
         logger.info("✅ Shutdown handlers registered")
         
         # Start polling
