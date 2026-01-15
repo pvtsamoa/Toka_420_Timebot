@@ -5,9 +5,6 @@ import os
 class Settings:
     TELEGRAM_BOT_TOKEN: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
     TELEGRAM_SCOPE: str = os.getenv("TELEGRAM_SCOPE", "all")
-    FF_NEWS: bool = os.getenv("FF_NEWS", "1") == "1"
-    FF_X_RELAY: bool = os.getenv("FF_X_RELAY", "0") == "1"
-    FF_PRE_ROLL: bool = os.getenv("FF_PRE_ROLL", "1") == "1"
 
     # Split CHAT_IDS by comma → list of strings
     CHAT_IDS: list[str] = field(

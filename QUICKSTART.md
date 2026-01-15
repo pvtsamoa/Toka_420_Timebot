@@ -1,0 +1,140 @@
+# Quick Start — Toka 420 Time Bot
+
+🚀 **Production Ready** | 🟢 **All Critical Issues Fixed** | ✅ **Tested & Documented**
+
+---
+
+## 30-Second Deployment
+
+```bash
+# Option 1: Docker (Recommended)
+docker build -t toka .
+docker run --env-file .env toka
+
+# Option 2: Systemd (Linux)
+sudo cp toka.service /etc/systemd/system/
+sudo systemctl enable toka && sudo systemctl start toka
+
+# Check status
+docker logs toka -f  # or: journalctl -u toka -f
+```
+
+---
+
+## Configuration (.env)
+
+```bash
+TELEGRAM_BOT_TOKEN=123456:ABCdefGHIjklmnoPQRstuvWxyz
+TELEGRAM_GLOBAL_CHAT_ID=-100123456789
+TELEGRAM_SCOPE=all
+DEFAULT_TOKEN=weedcoin
+TZ=America/Los_Angeles
+```
+
+---
+
+## Telegram Commands
+
+| Command | Purpose |
+|---------|---------|
+| `/status` | Show scheduler & bot health |
+| `/news [scope]` | Latest cannabis/crypto news |
+| `/studies` | Cannabis research & education |
+| `/token [symbol]` | Get/set price ticker |
+| `/health` | Quick health check |
+
+---
+
+## Monitoring
+
+```bash
+# Docker
+docker logs toka -f
+docker stats toka
+
+# Systemd
+journalctl -u toka -f
+systemctl status toka
+
+# Check rituals
+grep "ritual" logs/bot.log | tail -5
+```
+
+---
+
+## Logs Location
+
+- **Docker:** stdout (use `docker logs`)
+- **Systemd:** journalctl (`journalctl -u toka -f`)
+- **File:** `logs/bot.log`
+
+---
+
+## Troubleshooting
+
+| Issue | Fix |
+|-------|-----|
+| "TELEGRAM_BOT_TOKEN missing" | Set in .env file |
+| "TELEGRAM_GLOBAL_CHAT_ID not set" | Get from @userinfobot, add to .env |
+| No rituals sent | Check logs for errors |
+| High memory usage | Check log file size |
+| API errors (429) | Wait 5-10 minutes |
+
+---
+
+## Key Files
+
+- 📋 [DEPLOYMENT.md](DEPLOYMENT.md) — Full deployment guide
+- 🔍 [PRODUCTION_REVIEW.md](PRODUCTION_REVIEW.md) — Comprehensive review
+- ✅ [WORK_COMPLETED.md](WORK_COMPLETED.md) — What was fixed
+- 🐳 [Dockerfile](Dockerfile) — Docker build
+- ⚙️ [toka.service](toka.service) — Systemd service
+- 🧪 [tests/](tests/) — Unit tests
+
+---
+
+## Backup Data
+
+```bash
+# Backup
+tar -czf backup-$(date +%Y%m%d).tar.gz data/ logs/
+
+# Restore
+tar -xzf backup-20260115.tar.gz
+systemctl restart toka
+```
+
+---
+
+## Support
+
+### Check Startup
+```bash
+python app.py
+# Should show: ✅ Bot initialized successfully
+```
+
+### Validate Config
+```bash
+python -c "from services.config_validator import validate_config; validate_config()"
+```
+
+### Test Imports
+```bash
+python -c "import telegram; from services.ritual_time import ritual_call; print('✅ OK')"
+```
+
+---
+
+## Resources
+
+- 🤖 [Telegram Bot API](https://core.telegram.org/bots/api)
+- 📊 [DexScreener API](https://docs.dexscreener.com/)
+- 🐳 [Docker Docs](https://docs.docker.com/)
+- 🔧 [Systemd Docs](https://www.freedesktop.org/software/systemd/man/systemd.service.html)
+
+---
+
+**Version:** 1.0 (Production Ready)  
+**Last Updated:** January 15, 2026  
+**Status:** 🟢 READY TO DEPLOY
