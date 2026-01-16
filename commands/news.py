@@ -7,7 +7,7 @@ from config import SETTINGS
 
 logger = logging.getLogger(__name__)
 
-# News category sources - reliable feeds only
+# News category sources
 CRYPTO_NEWS = [
     "https://www.coindesk.com/arc/outboundfeeds/rss/",
     "https://cointelegraph.com/rss",
@@ -46,95 +46,110 @@ _user_calls = {}
 
 
 def _fetch_one(url: str):
-    """Fetch the first item from an RSS feed."""
+    """Fetch the first valid item from an RSS feed."""
     try:
-        r = requests.get(url, timeout=10)
+        r = requests.get(url, timeout=10, headers={"User-Agent": "Toka420Bot/1.0"})
         r.raise_for_status()
+
         root = ET.fromstring(r.content)
-        chan_title = (root.findtext("./channel/title") or "").strip()
-        item = root.find("./channel/item")
-        if item is None:
-            logger.debug(f"No items in feed: {url}")
+
+        # RSS: <rss><channel>...
+        channel = root.find("./channel")
+        if channel is None:
+            # Atom feeds sometimes look different; fail gracefully
+            logger.debug("No RSS channel found for feed: %s", url)
             return None
+
+        chan_title = (channel.findtext("title") or "").strip()
+        item = channel.find("item")
+        if item is None:
+            logger.debug("No items in feed: %s", url)
+            return None
+
         title = (item.findtext("title") or "").strip()
         link = (item.findtext("link") or "").strip()
+
+        # Some feeds use <link href="..."> or have whitespace/newlines
+        if not link:
+            link_el = item.find("link")
+            if link_el is not None and link_el.attrib.get("href"):
+                link = link_el.attrib["href"].strip()
+
         if not title or not link:
-            logger.debug(f"Invalid item in feed: {url}")
+            logger.debug("Invalid item in feed: %s", url)
             return None
+
         return chan_title, title, link
+
     except requests.Timeout:
-        logger.warning(f"Timeout fetching feed: {url}")
+        logger.warning("Timeout fetching feed: %s", url)
         return None
     except requests.RequestException as e:
-        logger.warning(f"Request error fetching feed {url}: {e}")
+        logger.warning("Request error fetching feed %s: %s", url, e)
         return None
     except ET.ParseError as e:
-        logger.warning(f"XML parse error in feed {url}: {e}")
+        logger.warning("XML parse error in feed %s: %s", url, e)
+        return None
+    except Exception as e:
+        logger.exception("Unexpected error fetching feed %s: %s", url, e)
         return None
 
 
 def _get_category_cycle(user_id: int) -> str:
-    """Rotate through 2 categories per user call (crypto → markets)."""
-    global _user_calls
-    
+    """Rotate through 2 categories per user call (crypto → market)."""
     call_count = _user_calls.get(user_id, 0)
-    category_idx = call_count % 2
-    
     _user_calls[user_id] = call_count + 1
-    
-    categories = ["crypto", "market"]
-    return categories[category_idx]
+    return ["crypto", "market"][call_count % 2]
+
+
+def _reply_target(update: Update):
+    return update.effective_message
 
 
 async def news(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Send rotating news: cannabis studies → cannabis news → crypto cannabis news."""
-    user_id = update.effective_user.id
-    logger.info(f"News command requested (user: {user_id})")
-    
+    """Send rotating news: Crypto → Markets, with optional regional fallback."""
+    user_id = update.effective_user.id if update.effective_user else "unknown"
+    logger.info("News command requested (user: %s)", user_id)
+
+    msg = _reply_target(update)
+
     try:
-        # Get rotation category for this user
-        category = _get_category_cycle(user_id)
-        
-        # Select feeds based on category
+        category = _get_category_cycle(int(user_id) if user_id != "unknown" else 0)
+
         if category == "crypto":
             feeds = CRYPTO_NEWS
             emoji = "💰"
             title = "Cryptocurrency News"
-        else:  # market
+        else:
             feeds = MARKET_NEWS
             emoji = "📈"
-            title = "Market & Finance News"
-        
-        # Try each feed until we get an article
+            title = "Market and Finance News"
+
         result = None
         for url in feeds:
             result = _fetch_one(url)
             if result:
-                logger.debug(f"✅ Got article from {url}")
                 break
-        
-        # Fallback to regional feeds if all failed
+
         if not result:
-            logger.debug("All category feeds failed, trying regional fallback")
-            scope = (SETTINGS.TELEGRAM_SCOPE or "all").lower()
+            scope = (getattr(SETTINGS, "TELEGRAM_SCOPE", None) or "all").lower()
             fallback_feeds = REGIONAL_FEEDS.get(scope, [])
             for url in fallback_feeds:
                 result = _fetch_one(url)
                 if result:
-                    logger.debug(f"✅ Got article from fallback feed")
                     break
-        
+
         if not result:
-            await update.message.reply_text(
-                f"⚠️ Could not fetch {title.lower()} right now.\n\n"
-                f"Try again in a few moments.",
-                parse_mode="Markdown"
-            )
-            logger.warning(f"Could not fetch any news for category {category}")
+            if msg:
+                await msg.reply_text(
+                    f"⚠️ Could not fetch {title.lower()} right now.\n\nTry again in a few moments.",
+                    parse_mode="Markdown",
+                )
+            logger.warning("Could not fetch any news for category %s", category)
             return
-        
+
         chan_title, article_title, link = result
-        
+
         message = f"""
 {emoji} **{title}**
 
@@ -143,17 +158,17 @@ async def news(update: Update, context: ContextTypes.DEFAULT_TYPE):
 📰 Source: {chan_title}
 🔗 [Read more]({link})
 
-────────────────────
+--------------------
 *Call `/news` again for the next category*
 *Categories rotate: Crypto → Markets*
 """
-        
-        await update.message.reply_text(message, parse_mode="Markdown")
-        logger.info(f"✅ Sent {category} news to user {user_id}: {article_title[:50]}")
-        
+
+        if msg:
+            await msg.reply_text(message, parse_mode="Markdown")
+
+        logger.info("Sent %s news to user %s: %s", category, user_id, article_title[:80])
+
     except Exception as e:
-        logger.exception(f"Error in news command: {e}")
-        await update.message.reply_text(
-            "⚠️ Error fetching news. Try again later.",
-            parse_mode="Markdown"
-        )
+        logger.exception("Error in news command: %s", e)
+        if msg:
+            await msg.reply_text("⚠️ Error fetching news. Try again later.", parse_mode="Markdown")

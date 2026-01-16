@@ -7,7 +7,7 @@ def validate_config():
     """Validate all required environment variables at startup."""
     required_vars = {
         "TELEGRAM_BOT_TOKEN": "Telegram bot token from BotFather",
-        "TELEGRAM_GLOBAL_CHAT_ID": "Telegram chat ID where rituals will be posted",
+        "TELEGRAM_GLOBAL_CHAT_ID": "Telegram group chat ID where rituals will be posted",
     }
     
     optional_vars = {
@@ -31,8 +31,8 @@ def validate_config():
     for var, description in optional_vars.items():
         value = os.getenv(var)
         if value:
-            logger.info(f"✅ {var} configured")
+            logger.info(f"{var} configured")
         else:
-            logger.info(f"ℹ️  {var} not set (will use default)")
+            logger.info(f"{var} not set (will use default)")
     
-    logger.info("✅ All required configuration validated")
+    logger.info("All required configuration validated")
