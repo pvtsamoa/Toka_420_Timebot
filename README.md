@@ -1,3 +1,14 @@
+# ⚠️ ARCHIVED - No Longer Maintained
+
+**Archive Date:** February 17, 2026  
+**Status:** This repository is archived and no longer actively maintained.
+
+**Reason for archiving:** [Choose one below]
+
+---
+
+
+
 # Toka 420 Time Bot — Telegram Cannabis Ritual Bot
 
 🌿⛵ **Weedcoin ritual bot** designed to call 420 in every time zone. This bot blesses one city at 4:20 PM in its respective time zone, checks current Weedcoin price action, and shares cannabis crypto news from around the world.
